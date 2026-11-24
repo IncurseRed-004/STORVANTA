@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | STORVANTA{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Products</div>
+                <div class="fs-3 fw-bold mt-1">{{ total_products }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Low-Stock Alerts</div>
+                <div class="fs-3 fw-bold mt-1 {% if low_stock_count > 0 %}text-danger{% else %}text-success{% endif %}">
+                    {{ low_stock_count }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Sales</div>
+                <div class="fs-3 fw-bold text-primary mt-1">₹{{ total_sales|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <div class="text-muted small">Total Purchases</div>
+                <div class="fs-3 fw-bold text-secondary mt-1">₹{{ total_purchases|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="card-title mb-3">Monthly Sales vs. Purchases (₹)</h6>
+                <canvas id="monthlyChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h6 class="card-title mb-3">Products by Category</h6>
+                <canvas id="categoryChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low-Stock Alerts Table -->
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h6 class="mb-0">
+            <i class="bi bi-exclamation-triangle text-warning me-2"></i>Low-Stock Alerts
+        </h6>
+        <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-secondary">View All Products</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>SKU</th>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>Current Stock</th>
+                    <th>Reorder Level</th>
+                    {% if user.is_staff or user.is_superuser or user.is_manager %}
+                        <th class="text-end">Action</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in low_stock_products %}
+                <tr>
+                    <td><code>{{ product.sku }}</code></td>
+                    <td class="fw-semibold">{{ product.name }}</td>
+                    <td>{{ product.category.name }}</td>
+                    <td>
+                        <span class="badge {% if product.stock_quantity == 0 %}bg-danger{% else %}bg-warning text-dark{% endif %}">
+                            {{ product.stock_quantity }}
+                        </span>
+                    </td>
+                    <td>{{ product.reorder_level }}</td>
+                    {% if user.is_staff or user.is_superuser or user.is_manager %}
+                    <td class="text-end">
+                        <a href="{% url 'purchase_create' %}" class="btn btn-sm btn-outline-primary">
+                            Restock
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        All products are above their reorder levels.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{{ month_labels|json_script:"month-labels" }}
+{{ sales_series|json_script:"sales-series" }}
+{{ purchases_series|json_script:"purchases-series" }}
+{{ category_labels|json_script:"category-labels" }}
+{{ category_counts|json_script:"category-counts" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+    const monthLabels = JSON.parse(document.getElementById("month-labels").textContent);
+    const salesSeries = JSON.parse(document.getElementById("sales-series").textContent);
+    const purchasesSeries = JSON.parse(document.getElementById("purchases-series").textContent);
+    const categoryLabels = JSON.parse(document.getElementById("category-labels").textContent);
+    const categoryCounts = JSON.parse(document.getElementById("category-counts").textContent);
+
+    new Chart(document.getElementById("monthlyChart"), {
+        type: "bar",
+        data: {
+            labels: monthLabels,
+            datasets: [
+                {
+                    label: "Sales (₹)",
+                    data: salesSeries,
+                    backgroundColor: "rgba(13, 110, 253, 0.75)",
+                    borderRadius: 4
+                },
+                {
+                    label: "Purchases (₹)",
+                    data: purchasesSeries,
+                    backgroundColor: "rgba(108, 117, 125, 0.55)",
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    new Chart(document.getElementById("categoryChart"), {
+        type: "doughnut",
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                data: categoryCounts,
+                backgroundColor: [
+                    "#0d6efd", "#198754", "#ffc107", "#dc3545", "#0dcaf0", "#6f42c1"
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: "bottom" }
+            }
+        }
+    });
+</script>
+{% endblock %}

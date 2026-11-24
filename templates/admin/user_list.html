@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users | STORVANTA{% endblock %}
+{% block page_title %}Manage Users{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h6 class="text-muted mb-0">Total Users: {{ users|length }}</h6>
+    <a href="{% url 'user_create' %}" class="btn btn-primary btn-sm">
+        <i class="bi bi-person-plus me-1"></i> Add User
+    </a>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="fw-semibold">{{ u.username }}</td>
+                    <td>{{ u.get_full_name|default:"—" }}</td>
+                    <td>{{ u.email|default:"—" }}</td>
+                    <td>
+                        {% if u.is_staff or u.is_superuser %}
+                            <span class="badge bg-dark">Admin</span>
+                        {% elif u.is_manager %}
+                            <span class="badge bg-primary">Inventory Manager</span>
+                        {% elif u.is_sales_staff %}
+                            <span class="badge bg-info text-dark">Sales Staff</span>
+                        {% else %}
+                            <span class="badge bg-secondary">User</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-muted small">{{ u.date_joined|date:"d M Y" }}</td>
+                    <td class="text-end">
+                        {% if u != request.user %}
+                            <form method="post" action="{% url 'user_delete' u.pk %}" class="d-inline"
+                                  onsubmit="return confirm('Delete user {{ u.username }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        {% else %}
+                            <span class="text-muted small">Current</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

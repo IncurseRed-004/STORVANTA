@@ -16,7 +16,7 @@ urlpatterns = [
     #manager_views.py
     # CATEGORY
     path('categories/', manager_views.category_list, name='category_list'),
-    path('categories/add/', manager_views.add_category, name='add_category'),
+    path('categories/add/', manager_views.add_category, name='category_create'),
 
     # SUPPLIER
     path('suppliers/', manager_views.supplier_list, name='supplier_list'),
@@ -34,7 +34,7 @@ urlpatterns = [
 
 #     staff_views.py
     # SALES
-    path('sales/', staff_views.sales_list, name='sales_list'),
-    path('sales/add/', staff_views.sales_create, name='sales_create'),
+    path('sales/', staff_views.sales_list, name='sale_list'),
+    path('sales/add/', staff_views.sales_create, name='sale_create'),
 
 ]

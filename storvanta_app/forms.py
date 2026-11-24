@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
+from .models import Category, Login, Product, Purchase, Sale, Supplier
 
-from .models import Supplier, Category, Product, Purchase, Sale
+from .models import Supplier, Category, Product, Purchase, Sale, Login
 
 
 class UserRegistration(UserCreationForm):
@@ -13,7 +13,7 @@ class UserRegistration(UserCreationForm):
     role = forms.ChoiceField(choices=ROlE_CHOICES,widget=forms.RadioSelect)
 
     class Meta:
-        model = User
+        model = Login
         fields = ["username", "first_name", "last_name", "email", "password1", "password2", "role"]
 
     def save(self, commit=True):
